@@ -177,7 +177,44 @@ st.plotly_chart(fig_hard, use_container_width=True)
 
 st.divider()
 
-# ── Section 4 – Student leaderboard ──────────────────────────────────────────
+# ── Section 4 – Students below 50% average ───────────────────────────────────
+st.subheader("Étudiants en difficulté (moyenne < 50%)")
+
+at_risk = student_means[student_means < 50].sort_values()
+
+if at_risk.empty:
+    st.success("Aucun étudiant en dessous de 50% de moyenne.")
+else:
+    st.warning(f"{len(at_risk)} étudiant(s) sous la barre des 50%")
+
+    fig_risk = px.bar(
+        x=at_risk.index.str.split("@").str[0],
+        y=at_risk.values,
+        labels={"x": "Étudiant", "y": "Moyenne (%)"},
+        title="Étudiants avec une moyenne générale < 50%",
+        color=at_risk.values,
+        color_continuous_scale="Reds_r",
+    )
+    fig_risk.add_hline(y=50, line_dash="dash", line_color="orange", annotation_text="50%")
+    fig_risk.update_yaxes(range=[0, 105], ticksuffix="%")
+    fig_risk.update_coloraxes(showscale=False)
+    fig_risk.update_traces(text=[f"{v:.1f}%" for v in at_risk.values], textposition="outside")
+    st.plotly_chart(fig_risk, use_container_width=True)
+
+    # Detail table
+    at_risk_df = df.loc[at_risk.index].copy()
+    at_risk_df["Moyenne"] = at_risk
+    at_risk_df = at_risk_df.sort_values("Moyenne")
+    at_risk_df.index = at_risk_df.index.str.split("@").str[0]
+    fmt_risk = {col: "{:.1f}%" for col in at_risk_df.columns}
+    st.dataframe(
+        at_risk_df.style.format(fmt_risk).background_gradient(cmap="Reds_r", subset=at_risk_df.columns),
+        use_container_width=True,
+    )
+
+st.divider()
+
+# ── Section 5 – Student leaderboard ──────────────────────────────────────────
 st.subheader("Classement des étudiants")
 
 leaderboard = df.copy()
