@@ -178,24 +178,24 @@ st.plotly_chart(fig_hard, use_container_width=True)
 st.divider()
 
 # ── Section 4 – Students below 50% average ───────────────────────────────────
-st.subheader("Étudiants en difficulté (moyenne < 50%)")
+st.subheader("Étudiants en difficulté (moyenne < 20%)")
 
-at_risk = student_means[student_means < 50].sort_values()
+at_risk = student_means[student_means < 20].sort_values()
 
 if at_risk.empty:
-    st.success("Aucun étudiant en dessous de 50% de moyenne.")
+    st.success("Aucun étudiant en dessous de 20% de moyenne.")
 else:
-    st.warning(f"{len(at_risk)} étudiant(s) sous la barre des 50%")
+    st.warning(f"{len(at_risk)} étudiant(s) sous la barre des 20%")
 
     fig_risk = px.bar(
         x=at_risk.index.str.split("@").str[0],
         y=at_risk.values,
         labels={"x": "Étudiant", "y": "Moyenne (%)"},
-        title="Étudiants avec une moyenne générale < 50%",
+        title="Étudiants avec une moyenne générale < 20%",
         color=at_risk.values,
         color_continuous_scale="Reds_r",
     )
-    fig_risk.add_hline(y=50, line_dash="dash", line_color="orange", annotation_text="50%")
+    fig_risk.add_hline(y=20, line_dash="dash", line_color="orange", annotation_text="20%")
     fig_risk.update_yaxes(range=[0, 105], ticksuffix="%")
     fig_risk.update_coloraxes(showscale=False)
     fig_risk.update_traces(text=[f"{v:.1f}%" for v in at_risk.values], textposition="outside")
