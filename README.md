@@ -1,6 +1,6 @@
-# 📊 Epitech Pool – Notebook Graph Generator
+# 📊 Epitech Pool – Progression Analyzer
 
-A Jupyter Notebook tool to analyze Pool results and automatically generate student and promotion statistics graphs.
+A tool to analyze Pool results and visualize student and promotion statistics, available as a **Jupyter Notebook** or an **interactive Streamlit dashboard**.
 
 ---
 
@@ -8,10 +8,12 @@ A Jupyter Notebook tool to analyze Pool results and automatically generate stude
 
 This project uses the following libraries:
 
-- **matplotlib** – Graph generation  
-- **Jupyter Notebook** – Notebook execution  
-- **NumPy** – Mathematical operations  
-- **Pandas** – Dataset processing  
+- **matplotlib** – Static graph generation (notebook)
+- **Jupyter Notebook** – Notebook execution
+- **NumPy** – Mathematical operations
+- **Pandas** – Dataset processing
+- **Streamlit** – Interactive web dashboard
+- **Plotly** – Interactive charts (dashboard)
 
 All dependencies are listed in `requirements.txt`.
 
@@ -39,53 +41,70 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-4. **Run Jupyter Notebook**
+---
+
+## ▶️ Getting started
+
+1. Create a `datasets` folder at the root of the repository.
+2. Add your Pool CSV datasets inside this folder.
+
+You can download tested datasets from:
+👉 https://hermes.epitest.eu/
+Go to the results page and click on **"CSV (All instances)"**.
+
+⚠️ You need at least **two Pool days datasets** for the graphs to work properly.
+
+---
+
+## 📓 Running the Notebook
 
 ```bash
 jupyter notebook
 ```
 
+1. Open `progression.ipynb`.
+2. Click **Run All**.
+3. When prompted, copy/paste the notebook link displayed in the terminal if required.
+
+Graphs are generated and saved automatically in `plots_students/`.
+
 ---
 
-## ▶️ Running the Notebook
+## 🌐 Running the Dashboard
 
-1. Create a `datasets` folder at the root of the repository.
-2. Add your Pool CSV datasets inside this folder.
+```bash
+streamlit run dashboard.py
+```
 
-You can download tested datasets from:  
-👉 https://hermes.epitest.eu/  
-Go to the results page and click on **"CSV (All instances)"**.
+Opens at `http://localhost:8501` with the following sections:
 
-⚠️ You need at least **two Pool days datasets** for the graphs to work properly.
+| Section | Description |
+|---|---|
+| **KPIs** | Active students, global average, best student, hardest day |
+| **Class progression** | Interactive line chart of daily class averages |
+| **Individual view** | Per-student curve vs. class average + score table |
+| **Hardest days** | Bar chart of the N days with the lowest scores (configurable) |
+| **Leaderboard** | Students ranked by average score with color gradient |
 
-3. Open `progression.ipynb`.
-4. Click **Run All**.
-5. When prompted, copy/paste the notebook link displayed in the terminal if required.
-
-You should now have all graphs generated automatically.
+The sidebar lets you filter students and adjust the number of hardest days shown.
 
 ---
 
 ## 🚀 Features
 
-- ✅ Generate cleaned daily results in the format:  
-  `[login, percentage]`
-
-- 📈 Generate a chart showing the **average promotion percentage per day**
-
-- 👨‍🎓 Generate an individual chart for each student showing their progression across days  
-  → Saved in the `plot_students/` folder
-
-- 📊 Generate a bar chart highlighting the **three hardest Pool days**
+- ✅ Generate cleaned daily results in the format `[login, percentage]`
+- 📈 Class average progression chart (static + interactive)
+- 👨‍🎓 Individual student progression charts → saved in `plots_students/`
+- 📊 Bar chart highlighting the hardest Pool days
+- 🌐 Interactive Streamlit dashboard with Plotly charts and filters
 
 ---
 
 ## 🗺️ Roadmap
 
-- 🔄 Automatic dataset retrieval from Hermes  
-- 🌐 Web dashboard (React frontend)  
-- 🔌 REST API (Nest.js backend serving stats + graphs)  
-- 📁 Automatic report generation (PDF summary per promotion)  
+- 🔄 Automatic dataset retrieval from Hermes
+- 🔌 REST API (Nest.js backend serving stats + graphs)
+- 📁 Automatic report generation (PDF summary per promotion)
 
 ---
 
@@ -94,7 +113,8 @@ You should now have all graphs generated automatically.
 ```
 .
 ├── datasets/
-├── plot_students/
+├── plots_students/
+├── dashboard.py
 ├── progression.ipynb
 ├── requirements.txt
 └── README.md
