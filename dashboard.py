@@ -1,0 +1,194 @@
+import os
+import re
+import pandas as pd
+import streamlit as st
+import plotly.express as px
+import plotly.graph_objects as go
+
+# ── Page config ──────────────────────────────────────────────────────────────
+st.set_page_config(
+    page_title="Pool Progression – Epitech",
+    page_icon="📊",
+    layout="wide",
+)
+
+# ── Data loading ──────────────────────────────────────────────────────────────
+DATASETS_DIR = os.path.join(os.path.dirname(__file__), "datasets")
+
+
+@st.cache_data
+def load_data(datasets_dir: str) -> pd.DataFrame:
+    """Load all CSVs and return a DataFrame indexed by student login."""
+    results: dict[str, dict[str, float]] = {}
+
+    for filename in sorted(os.listdir(datasets_dir)):
+        if not filename.endswith(".csv"):
+            continue
+        match = re.search(r"databootcampd(\d+)", filename)
+        if not match:
+            continue
+        day_label = f"day{match.group(1)}"
+        filepath = os.path.join(datasets_dir, filename)
+        df_day = pd.read_csv(filepath, sep=";")
+
+        if "login" not in df_day.columns or "test %" not in df_day.columns:
+            continue
+
+        df_day = df_day[["login", "test %"]].copy()
+        df_day["test %"] = pd.to_numeric(df_day["test %"], errors="coerce").fillna(0)
+
+        for _, row in df_day.iterrows():
+            login = str(row["login"]).strip()
+            pct = float(row["test %"])
+            if login not in results:
+                results[login] = {}
+            results[login][day_label] = pct
+
+    df = pd.DataFrame.from_dict(results, orient="index")
+    df = df.reindex(sorted(df.columns), axis=1)
+    df.index.name = "login"
+    return df
+
+
+df_raw = load_data(DATASETS_DIR)
+
+# ── Sidebar ───────────────────────────────────────────────────────────────────
+st.sidebar.title("Paramètres")
+
+n_days = len(df_raw.columns)
+st.sidebar.metric("Jours chargés", n_days)
+
+n_hardest = st.sidebar.slider(
+    "Nombre de jours difficiles à afficher", min_value=1, max_value=n_days, value=min(3, n_days)
+)
+
+all_students = sorted(df_raw.index.tolist())
+selected_students = st.sidebar.multiselect(
+    "Filtrer les étudiants",
+    options=all_students,
+    default=all_students,
+    help="Sélectionne les étudiants à inclure dans les analyses.",
+)
+
+# Apply student filter
+df = df_raw.loc[selected_students] if selected_students else df_raw
+
+# ── Title ─────────────────────────────────────────────────────────────────────
+st.title("Pool Progression – Epitech")
+st.caption(f"Analyse de {len(df)} étudiants sur {n_days} jours · B-DAT-200 Data Bootcamp")
+
+# ── KPIs ──────────────────────────────────────────────────────────────────────
+day_means = df.mean(axis=0)
+student_means = df.mean(axis=1)
+overall_avg = student_means.mean()
+best_student = student_means.idxmax()
+hardest_day = day_means.idxmin()
+
+col1, col2, col3, col4 = st.columns(4)
+col1.metric("Étudiants actifs", len(df))
+col2.metric("Moyenne globale", f"{overall_avg:.1f}%")
+col3.metric("Meilleur étudiant", best_student.split("@")[0], f"{student_means[best_student]:.1f}%")
+col4.metric("Jour le + difficile", hardest_day, f"{day_means[hardest_day]:.1f}%", delta_color="inverse")
+
+st.divider()
+
+# ── Section 1 – Class average progression ────────────────────────────────────
+st.subheader("Progression moyenne de la promotion")
+
+fig_avg = px.line(
+    x=day_means.index,
+    y=day_means.values,
+    markers=True,
+    labels={"x": "Jour", "y": "Moyenne (%)"},
+    title="Score moyen par jour",
+)
+fig_avg.update_traces(line_color="#4C8BF5", line_width=3, marker_size=8)
+fig_avg.update_yaxes(range=[0, 105], ticksuffix="%")
+fig_avg.update_layout(hovermode="x unified")
+st.plotly_chart(fig_avg, use_container_width=True)
+
+st.divider()
+
+# ── Section 2 – Individual student progression ────────────────────────────────
+st.subheader("Progression individuelle")
+
+selected_student = st.selectbox(
+    "Choisir un étudiant",
+    options=all_students,
+    format_func=lambda x: x.split("@")[0],
+)
+
+student_row = df_raw.loc[selected_student]
+
+fig_student = go.Figure()
+fig_student.add_trace(
+    go.Scatter(
+        x=student_row.index,
+        y=student_row.values,
+        mode="lines+markers",
+        name=selected_student.split("@")[0],
+        line=dict(color="#F04E37", width=3),
+        marker=dict(size=9),
+    )
+)
+fig_student.add_trace(
+    go.Scatter(
+        x=day_means.index,
+        y=day_means.values,
+        mode="lines",
+        name="Moyenne promo",
+        line=dict(color="#4C8BF5", width=2, dash="dot"),
+    )
+)
+fig_student.update_yaxes(range=[0, 105], ticksuffix="%")
+fig_student.update_layout(
+    title=f"Progression de {selected_student.split('@')[0]}",
+    hovermode="x unified",
+    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+)
+st.plotly_chart(fig_student, use_container_width=True)
+
+# Mini-table of student scores
+detail_df = pd.DataFrame({
+    "Jour": student_row.index,
+    "Score (%)": student_row.values,
+}).set_index("Jour")
+detail_df["Score (%)"] = detail_df["Score (%)"].map(lambda v: f"{v:.1f}%")
+st.dataframe(detail_df.T, use_container_width=True)
+
+st.divider()
+
+# ── Section 3 – Hardest days ──────────────────────────────────────────────────
+st.subheader(f"Top {n_hardest} jours les plus difficiles")
+
+hardest = day_means.nsmallest(n_hardest).sort_values()
+fig_hard = px.bar(
+    x=hardest.index,
+    y=hardest.values,
+    labels={"x": "Jour", "y": "Moyenne (%)"},
+    title=f"{n_hardest} jours avec les scores les plus bas",
+    color=hardest.values,
+    color_continuous_scale="Reds_r",
+)
+fig_hard.update_yaxes(range=[0, 105], ticksuffix="%")
+fig_hard.update_coloraxes(showscale=False)
+fig_hard.update_traces(text=[f"{v:.1f}%" for v in hardest.values], textposition="outside")
+st.plotly_chart(fig_hard, use_container_width=True)
+
+st.divider()
+
+# ── Section 4 – Student leaderboard ──────────────────────────────────────────
+st.subheader("Classement des étudiants")
+
+leaderboard = df.copy()
+leaderboard["Moyenne"] = leaderboard.mean(axis=1)
+leaderboard = leaderboard.sort_values("Moyenne", ascending=False)
+leaderboard.index = leaderboard.index.str.split("@").str[0]
+
+# Format percentages
+fmt = {col: "{:.1f}%" for col in leaderboard.columns}
+st.dataframe(
+    leaderboard.style.format(fmt).background_gradient(cmap="RdYlGn", subset=leaderboard.columns),
+    use_container_width=True,
+    height=600,
+)
