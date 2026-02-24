@@ -99,6 +99,7 @@ if df_raw.empty:
             st.success(f"✅ {saved_count} fichier(s) sauvegardé(s)")
             st.info("🔄 Rafraîchissez la page pour charger les données")
             if st.button("🔄 Rafraîchir maintenant"):
+                st.cache_data.clear()
                 st.rerun()
     
     st.sidebar.title("Paramètres")
