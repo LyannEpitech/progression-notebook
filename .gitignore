@@ -36,3 +36,7 @@ Thumbs.db
 # Others
 plots_students/
 datasets/
+
+# Jupyter
+.ipynb_checkpoints/
+*_out.ipynb
