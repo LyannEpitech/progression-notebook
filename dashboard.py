@@ -4,6 +4,7 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
+from hermes_api import load_data_from_api, sync_csv_from_api
 
 # ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -17,8 +18,11 @@ DATASETS_DIR = os.path.join(os.path.dirname(__file__), "datasets")
 
 
 @st.cache_data
-def load_data(datasets_dir: str) -> pd.DataFrame:
+def load_data(datasets_dir: str, use_api: bool = False) -> pd.DataFrame:
     """Load all CSVs and return a DataFrame indexed by student login."""
+    if use_api:
+        return load_data_from_api(datasets_dir)
+    
     results: dict[str, dict[str, float]] = {}
 
     for filename in sorted(os.listdir(datasets_dir)):
@@ -50,7 +54,30 @@ def load_data(datasets_dir: str) -> pd.DataFrame:
     return df
 
 
-df_raw = load_data(DATASETS_DIR)
+# ── Data source selection ─────────────────────────────────────────────────────
+st.sidebar.title("Source de données")
+
+data_source = st.sidebar.radio(
+    "Choisir la source",
+    options=["Fichiers CSV locaux", "API Hermès (direct)", "Sync API → CSV"],
+    index=0,
+    help="Fichiers CSV: mode offline | API direct: temps réel | Sync: met à jour les CSV"
+)
+
+if data_source == "Fichiers CSV locaux":
+    df_raw = load_data(DATASETS_DIR, use_api=False)
+elif data_source == "API Hermès (direct)":
+    with st.spinner("Chargement depuis l'API Hermès..."):
+        df_raw = load_data(DATASETS_DIR, use_api=True)
+    st.sidebar.success("✅ Données chargées depuis API")
+elif data_source == "Sync API → CSV":
+    if st.sidebar.button("🔄 Lancer la synchronisation"):
+        with st.spinner("Synchronisation en cours..."):
+            sync_csv_from_api(DATASETS_DIR)
+        st.sidebar.success("✅ Synchronisation terminée")
+        st.cache_data.clear()
+        st.rerun()
+    df_raw = load_data(DATASETS_DIR, use_api=False)
 
 # ── Check if data exists ──────────────────────────────────────────────────────
 if df_raw.empty:
@@ -107,7 +134,7 @@ if df_raw.empty:
     st.stop()
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
-st.sidebar.title("Paramètres")
+# Paramètres (le titre est déjà défini dans la section source de données)
 
 # ── Upload section ────────────────────────────────────────────────────────────
 st.sidebar.divider()
