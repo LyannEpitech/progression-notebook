@@ -72,11 +72,31 @@ Graphs are generated and saved automatically in `plots_students/`.
 
 ## 🌐 Running the Dashboard
 
+### Local (sans Docker)
+
 ```bash
 streamlit run dashboard.py
 ```
 
-Opens at `http://localhost:8501` with the following sections:
+### Avec Docker
+
+```bash
+# Build et lancement
+docker-compose up --build
+
+# Ou en arrière-plan
+docker-compose up -d --build
+```
+
+Le dashboard est accessible sur `http://localhost:8501`
+
+**Notes Docker :**
+- Les datasets sont persistés via un volume (`./datasets`)
+- Les graphs générés sont sauvegardés dans `./plots_students`
+
+---
+
+Le dashboard comprend les sections suivantes :
 
 | Section | Description |
 |---|---|

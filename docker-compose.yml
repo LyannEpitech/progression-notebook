@@ -1,0 +1,11 @@
+services:
+  dashboard:
+    build: .
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./datasets:/app/datasets
+      - ./plots_students:/app/plots_students
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
