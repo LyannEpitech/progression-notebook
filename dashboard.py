@@ -55,6 +55,39 @@ df_raw = load_data(DATASETS_DIR)
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 st.sidebar.title("Paramètres")
 
+# ── Upload section ────────────────────────────────────────────────────────────
+st.sidebar.divider()
+st.sidebar.subheader("📁 Upload datasets")
+
+uploaded_files = st.sidebar.file_uploader(
+    "Déposer les fichiers CSV",
+    type=["csv"],
+    accept_multiple_files=True,
+    help="Fichiers CSV exportés depuis Hermes (format: login;test %)",
+)
+
+if uploaded_files:
+    saved_count = 0
+    for uploaded_file in uploaded_files:
+        # Validate filename pattern
+        if not re.search(r"databootcampd\d+", uploaded_file.name):
+            st.sidebar.warning(f"⚠️ {uploaded_file.name} : nom non reconnu (attendu: databootcampdX.csv)")
+            continue
+
+        save_path = os.path.join(DATASETS_DIR, uploaded_file.name)
+        try:
+            with open(save_path, "wb") as f:
+                f.write(uploaded_file.getbuffer())
+            saved_count += 1
+        except Exception as e:
+            st.sidebar.error(f"❌ Erreur lors de la sauvegarde de {uploaded_file.name}: {e}")
+
+    if saved_count > 0:
+        st.sidebar.success(f"✅ {saved_count} fichier(s) sauvegardé(s)")
+        st.sidebar.info("🔄 Rafraîchissez la page pour charger les nouveaux datasets")
+
+st.sidebar.divider()
+
 n_days = len(df_raw.columns)
 st.sidebar.metric("Jours chargés", n_days)
 

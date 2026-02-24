@@ -46,7 +46,7 @@ pip install -r requirements.txt
 ## ▶️ Getting started
 
 1. Create a `datasets` folder at the root of the repository.
-2. Add your Pool CSV datasets inside this folder.
+2. Add your Pool CSV datasets inside this folder (ou upload directement depuis le dashboard).
 
 You can download tested datasets from:
 👉 https://hermes.epitest.eu/
@@ -93,6 +93,7 @@ The sidebar lets you filter students and adjust the number of hardest days shown
 ## 🚀 Features
 
 - ✅ Generate cleaned daily results in the format `[login, percentage]`
+- 📁 **Upload direct de datasets** depuis le dashboard (drag & drop)
 - 📈 Class average progression chart (static + interactive)
 - 👨‍🎓 Individual student progression charts → saved in `plots_students/`
 - 📊 Bar chart highlighting the hardest Pool days
