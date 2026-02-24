@@ -113,11 +113,13 @@ The sidebar lets you filter students and adjust the number of hardest days shown
 ## 🚀 Features
 
 - ✅ Generate cleaned daily results in the format `[login, percentage]`
-- 📁 **Upload direct de datasets** depuis le dashboard (drag & drop)
+- 📁 **Upload direct de datasets** depuis le dashboard (drag & drop) – même quand vide
+- 🗑️ **Clear data** – bouton pour supprimer tous les datasets en un clic
 - 📈 Class average progression chart (static + interactive)
 - 👨‍🎓 Individual student progression charts → saved in `plots_students/`
 - 📊 Bar chart highlighting the hardest Pool days
 - 🌐 Interactive Streamlit dashboard with Plotly charts and filters
+- 🐳 **Docker support** – déploiement facile avec `docker-compose`
 
 ---
 
@@ -133,10 +135,14 @@ The sidebar lets you filter students and adjust the number of hardest days shown
 
 ```
 .
-├── datasets/
-├── plots_students/
-├── dashboard.py
-├── progression.ipynb
-├── requirements.txt
+├── datasets/               # CSV files (mounted volume in Docker)
+├── datasets_backup/        # Backup folder for development
+├── plots_students/         # Generated plots
+├── dashboard.py            # Streamlit dashboard
+├── progression.ipynb       # Jupyter notebook
+├── requirements.txt        # Full dependencies (notebook + dashboard)
+├── requirements-dashboard.txt  # Light dependencies (dashboard only)
+├── Dockerfile              # Docker image
+├── docker-compose.yml      # Docker orchestration
 └── README.md
 ```
