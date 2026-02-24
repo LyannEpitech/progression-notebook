@@ -59,7 +59,7 @@ if df_raw.empty:
     
     st.markdown("""
     ### Pour commencer :
-    1. **Upload tes datasets** via la sidebar (📁 Upload datasets)
+    1. **Upload tes datasets** ci-dessous ⬇️
     2. Ou **restaure les datasets de backup** :
        ```bash
        cp datasets_backup/* datasets/
@@ -68,6 +68,38 @@ if df_raw.empty:
     
     Les fichiers doivent être au format `databootcampdXX.csv` exportés depuis Hermes.
     """)
+    
+    # Upload section in main page when empty
+    st.divider()
+    st.subheader("📁 Upload datasets")
+    
+    uploaded_files = st.file_uploader(
+        "Déposer les fichiers CSV",
+        type=["csv"],
+        accept_multiple_files=True,
+        help="Fichiers CSV exportés depuis Hermes (format: login;test %)",
+    )
+    
+    if uploaded_files:
+        saved_count = 0
+        for uploaded_file in uploaded_files:
+            if not re.search(r"databootcampd\d+", uploaded_file.name):
+                st.warning(f"⚠️ {uploaded_file.name} : nom non reconnu (attendu: databootcampdX.csv)")
+                continue
+            
+            save_path = os.path.join(DATASETS_DIR, uploaded_file.name)
+            try:
+                with open(save_path, "wb") as f:
+                    f.write(uploaded_file.getbuffer())
+                saved_count += 1
+            except Exception as e:
+                st.error(f"❌ Erreur lors de la sauvegarde de {uploaded_file.name}: {e}")
+        
+        if saved_count > 0:
+            st.success(f"✅ {saved_count} fichier(s) sauvegardé(s)")
+            st.info("🔄 Rafraîchissez la page pour charger les données")
+            if st.button("🔄 Rafraîchir maintenant"):
+                st.rerun()
     
     st.sidebar.title("Paramètres")
     st.sidebar.warning("⚠️ Aucun dataset chargé")
