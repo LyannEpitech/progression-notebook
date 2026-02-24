@@ -133,49 +133,64 @@ def fetch_test_results(activity_id: int, test_type: str = 'delivery') -> pd.Data
     return pd.DataFrame(students)
 
 
-def load_data_from_api(datasets_dir: str, instance: Optional[str] = None) -> pd.DataFrame:
+def load_data_from_api(datasets_dir: str, instance: Optional[str] = None, 
+                       year: Optional[str] = None, unit: Optional[str] = None) -> pd.DataFrame:
     """
     Charge toutes les données depuis l'API Hermès en se basant sur les noms des fichiers CSV présents.
+    Si aucun CSV n'est présent, utilise les paramètres year/unit fournis ou des valeurs par défaut.
     
     Cette fonction remplace `load_data()` dans dashboard.py pour le mode API.
     """
+    # Valeurs par défaut
+    default_year = "2025"
+    default_unit = "B-DAT-200"
+    
     # Récupérer tous les fichiers CSV
     csv_files = [f for f in os.listdir(datasets_dir) if f.endswith('.csv')]
     
-    if not csv_files:
-        return pd.DataFrame()
+    if csv_files:
+        # Parser le premier fichier pour obtenir year/unit (identiques pour tous)
+        first_file = csv_files[0]
+        meta = parse_csv_filename(first_file)
+        
+        if meta:
+            year = meta['year']
+            unit = meta['unit']
     
-    # Parser le premier fichier pour obtenir year/unit (identiques pour tous)
-    first_file = csv_files[0]
-    meta = parse_csv_filename(first_file)
+    # Si toujours pas de year/unit, utiliser les valeurs par défaut
+    if not year:
+        year = default_year
+    if not unit:
+        unit = default_unit
     
-    if not meta:
-        raise ValueError(f"Format de fichier non reconnu: {first_file}")
-    
-    year = meta['year']
-    unit = meta['unit']
+    print(f"Chargement API: year={year}, unit={unit}, instance={instance}")
     
     # Récupérer toutes les activités
     activities = get_activities(year, unit, instance)
     
+    # Filtrer uniquement les activités databootcamp
+    pool_activities = []
+    for activity in activities:
+        slug = activity.get('projectTemplate', {}).get('slug', '')
+        if 'databootcamp' in slug.lower():
+            pool_activities.append(activity)
+    
+    print(f"Activités pool trouvées: {len(pool_activities)}")
+    
     # Construire le mapping des résultats par jour
     all_results: Dict[str, Dict[str, float]] = {}
     
-    for csv_file in sorted(csv_files):
-        meta = parse_csv_filename(csv_file)
-        if not meta:
-            continue
-        
-        day_slug = meta['day_slug']
-        test_type = meta['test_type']
-        day_label = f"day{day_slug.replace('databootcampd', '')}"
-        
-        # Trouver l'activity_id correspondant
-        activity_id = find_activity_id(activities, day_slug)
-        
-        if not activity_id:
-            print(f"⚠️ Activité non trouvée: {day_slug}")
-            continue
+    # Déterminer le test_type à utiliser (par défaut delivery)
+    test_type = 'delivery'
+    if csv_files:
+        first_meta = parse_csv_filename(csv_files[0])
+        if first_meta:
+            test_type = first_meta['test_type']
+    
+    for activity in sorted(pool_activities, key=lambda x: x.get('projectTemplate', {}).get('slug', '')):
+        slug = activity.get('projectTemplate', {}).get('slug', '')
+        activity_id = activity.get('id')
+        day_label = f"day{slug.replace('databootcampd', '')}"
         
         # Récupérer les résultats
         try:
@@ -190,7 +205,7 @@ def load_data_from_api(datasets_dir: str, instance: Optional[str] = None) -> pd.
                 all_results[login][day_label] = pct
                 
         except Exception as e:
-            print(f"⚠️ Erreur récupération {day_slug}: {e}")
+            print(f"⚠️ Erreur récupération {slug}: {e}")
             continue
     
     # Convertir en DataFrame

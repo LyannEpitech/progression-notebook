@@ -67,9 +67,24 @@ data_source = st.sidebar.radio(
 if data_source == "Fichiers CSV locaux":
     df_raw = load_data(DATASETS_DIR, use_api=False)
 elif data_source == "API Hermès (direct)":
-    with st.spinner("Chargement depuis l'API Hermès..."):
-        df_raw = load_data(DATASETS_DIR, use_api=True)
-    st.sidebar.success("✅ Données chargées depuis API")
+    # Configuration API
+    st.sidebar.divider()
+    st.sidebar.subheader("⚙️ Configuration API")
+    
+    api_year = st.sidebar.text_input("Année", value="2025", help="Ex: 2025")
+    api_unit = st.sidebar.text_input("Unité", value="B-DAT-200", help="Ex: B-DAT-200")
+    api_instance = st.sidebar.text_input("Instance (optionnel)", value="", help="Ex: MAR-2-1")
+    
+    if st.sidebar.button("🚀 Charger depuis l'API"):
+        with st.spinner("Chargement depuis l'API Hermès..."):
+            df_raw = load_data_from_api(DATASETS_DIR, instance=api_instance or None, year=api_year, unit=api_unit)
+        st.sidebar.success(f"✅ {len(df_raw)} étudiants chargés")
+    else:
+        # Si pas encore chargé, essayer de charger depuis les fichiers existants
+        df_raw = load_data(DATASETS_DIR, use_api=False)
+        if df_raw.empty:
+            st.info("👆 Configure les paramètres API et clique sur 'Charger'")
+            st.stop()
 elif data_source == "Sync API → CSV":
     if st.sidebar.button("🔄 Lancer la synchronisation"):
         with st.spinner("Synchronisation en cours..."):
