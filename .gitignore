@@ -40,3 +40,6 @@ datasets/
 # Jupyter
 .ipynb_checkpoints/
 *_out.ipynb
+
+# Backup
+datasets_backup/

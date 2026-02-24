@@ -52,6 +52,27 @@ def load_data(datasets_dir: str) -> pd.DataFrame:
 
 df_raw = load_data(DATASETS_DIR)
 
+# ── Check if data exists ──────────────────────────────────────────────────────
+if df_raw.empty:
+    st.title("📊 Pool Progression – Epitech")
+    st.info("👋 Bienvenue ! Aucun dataset n'est chargé.")
+    
+    st.markdown("""
+    ### Pour commencer :
+    1. **Upload tes datasets** via la sidebar (📁 Upload datasets)
+    2. Ou **restaure les datasets de backup** :
+       ```bash
+       cp datasets_backup/* datasets/
+       ```
+    3. Puis **rafraîchis la page** (F5)
+    
+    Les fichiers doivent être au format `databootcampdXX.csv` exportés depuis Hermes.
+    """)
+    
+    st.sidebar.title("Paramètres")
+    st.sidebar.warning("⚠️ Aucun dataset chargé")
+    st.stop()
+
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 st.sidebar.title("Paramètres")
 
@@ -85,6 +106,28 @@ if uploaded_files:
     if saved_count > 0:
         st.sidebar.success(f"✅ {saved_count} fichier(s) sauvegardé(s)")
         st.sidebar.info("🔄 Rafraîchissez la page pour charger les nouveaux datasets")
+
+# ── Clear section ─────────────────────────────────────────────────────────────
+st.sidebar.divider()
+st.sidebar.subheader("🗑️ Clear data")
+
+if st.sidebar.button("🗑️ Supprimer tous les datasets", type="secondary", help="Supprime tous les fichiers CSV du dossier datasets"):
+    deleted_count = 0
+    for filename in os.listdir(DATASETS_DIR):
+        if filename.endswith(".csv"):
+            filepath = os.path.join(DATASETS_DIR, filename)
+            try:
+                os.remove(filepath)
+                deleted_count += 1
+            except Exception as e:
+                st.sidebar.error(f"Erreur suppression {filename}: {e}")
+    
+    if deleted_count > 0:
+        st.sidebar.success(f"✅ {deleted_count} fichier(s) supprimé(s)")
+        st.cache_data.clear()
+        st.sidebar.info("🔄 Rafraîchissez la page pour mettre à jour l'affichage")
+    else:
+        st.sidebar.info("ℹ️ Aucun dataset à supprimer")
 
 st.sidebar.divider()
 
