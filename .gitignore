@@ -11,6 +11,7 @@ venv/
 # Fichiers d'environnement
 .env
 .env.*
+!.env.example
 
 # Distribution / packaging
 build/
