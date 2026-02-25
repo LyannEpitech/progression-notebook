@@ -168,11 +168,13 @@ def load_data_from_api(datasets_dir: str, instance: Optional[str] = None,
     # Récupérer toutes les activités
     activities = get_activities(year, unit, instance)
     
-    # Filtrer uniquement les activités databootcamp
+    # Filtrer les activités de pool (databootcamp, poolweb, etc.)
+    # Exclure les activites non-pool connues (tardis, etc.)
+    EXCLUDED_SLUGS = {'tardis'}
     pool_activities = []
     for activity in activities:
-        slug = activity.get('projectTemplate', {}).get('slug', '')
-        if 'databootcamp' in slug.lower():
+        slug = activity.get('projectTemplate', {}).get('slug', '').lower()
+        if slug and slug not in EXCLUDED_SLUGS:
             pool_activities.append(activity)
     
     print(f"Activités pool trouvées: {len(pool_activities)}")
@@ -190,7 +192,11 @@ def load_data_from_api(datasets_dir: str, instance: Optional[str] = None,
     for activity in sorted(pool_activities, key=lambda x: x.get('projectTemplate', {}).get('slug', '')):
         slug = activity.get('projectTemplate', {}).get('slug', '')
         activity_id = activity.get('id')
-        day_label = f"day{slug.replace('databootcampd', '')}"
+        # Extraire le numero de jour depuis le slug (ex: databootcampd01 -> 01, poolwebd03 -> 03)
+        import re as _re
+        day_match = _re.search(r'd(\d+)$', slug)
+        day_num = day_match.group(1) if day_match else slug
+        day_label = f"day{day_num.zfill(2)}"
         
         # Récupérer les résultats
         try:
