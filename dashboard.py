@@ -168,11 +168,14 @@ def calculate_suspicion_score_v2(df):
     """
     scores = {}
     
+    def _init():
+        return {'score': 0, 'raisons': [], 'copieurs': 0, 'pics': 0, 'montagnes': 0, 'collectif': 0}
+    
     # 1. Copieurs (plagiat de voisin) - pondere fort
     copieurs = detect_copieurs(df)
     for _, row in copieurs.iterrows():
         for student in [row['etudiant_1'], row['etudiant_2']]:
-            scores[student] = scores.get(student, {'score': 0, 'raisons': []})
+            scores[student] = scores.get(student, _init())
             bonus_consec = 2 if row['jours_consecutifs'] >= 2 else 0
             points = 4 + min(row['jours_similaires'] - 3, 3) + bonus_consec
             scores[student]['score'] += points
@@ -186,33 +189,35 @@ def calculate_suspicion_score_v2(df):
     pics = detect_pics_isoles(df)
     for _, row in pics.iterrows():
         student = row['etudiant']
-        scores[student] = scores.get(student, {'score': 0, 'raisons': []})
+        scores[student] = scores.get(student, _init())
         scores[student]['score'] += 6
+        scores[student]['pics'] += 6
         scores[student]['raisons'].append(f"Pic isole: {row['contexte']} sur {row['jour']}")
     
     # 3. Montagnes russes
     montagnes = detect_montagnes_russes(df)
     for _, row in montagnes.iterrows():
         student = row['etudiant']
-        scores[student] = scores.get(student, {'score': 0, 'raisons': []})
-        scores[student]['score'] += min(row['alternances'] * 1.5, 7)
+        scores[student] = scores.get(student, _init())
+        points = min(row['alternances'] * 1.5, 7)
+        scores[student]['score'] += points
+        scores[student]['montagnes'] += points
         scores[student]['raisons'].append(f"Montagnes russes: {row['alternances']} alternances")
     
     # 4. Copies collectives - bonus si recidiviste
     copies = detect_copies_collectives(df)
     eleves_comptes = set()
     for _, row in copies.iterrows():
-        # Extraire les logins complets
         for eleve_short in row['eleves'].replace('...', '').split(', '):
             eleve_short = eleve_short.strip()
             if not eleve_short:
                 continue
-            # Trouver le login complet
             for full_login in df.index:
                 if full_login.startswith(eleve_short):
                     if full_login not in eleves_comptes:
-                        scores[full_login] = scores.get(full_login, {'score': 0, 'raisons': []})
+                        scores[full_login] = scores.get(full_login, _init())
                         scores[full_login]['score'] += 2
+                        scores[full_login]['collectif'] += 2
                         scores[full_login]['raisons'].append(
                             f"Copie collective: meme score {row['score']:.0f}% sur {row['jour']} "
                             f"avec {row['nb_eleves']-1} autres"
@@ -225,6 +230,10 @@ def calculate_suspicion_score_v2(df):
     
     result = pd.DataFrame.from_dict(scores, orient='index')
     result = result.sort_values('score', ascending=False)
+    # S'assurer que toutes les colonnes existent
+    for col in ['copieurs', 'pics', 'montagnes', 'collectif']:
+        if col not in result.columns:
+            result[col] = 0
     return result
 
 # ============ FONCTIONS UTILITAIRES ============

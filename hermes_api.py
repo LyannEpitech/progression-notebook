@@ -36,7 +36,7 @@ def parse_csv_filename(filename: str) -> Optional[Dict[str, str]]:
     Format attendu: hermes_2025_B-DAT-200_databootcampd01_delivery.csv
     Retourne: {year, unit, day_slug, test_type}
     """
-    pattern = r'hermes_(\d+)_(.+?)_(databootcampd\d+)_(delivery|git)\.csv'
+    pattern = r'hermes_(\d+)_(.+?)_(.+?\d+)_(delivery|git)\.csv'
     match = re.match(pattern, filename)
     
     if not match:
