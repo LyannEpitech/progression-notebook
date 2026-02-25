@@ -43,3 +43,12 @@ datasets/
 
 # Backup
 datasets_backup/
+
+# API Cache files
+.api_cache.json
+.dashboard_config.json
+
+# Debug files
+debug_*.py
+patch_debug.py
+test_dashboard.py
