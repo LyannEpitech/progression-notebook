@@ -84,10 +84,55 @@ def sidebar():
     df = pd.DataFrame()
     
     if data_source == "CSV":
+        st.sidebar.divider()
+        st.sidebar.subheader("Gestion des datasets")
+        
+        # Upload de fichiers CSV
+        uploaded_files = st.sidebar.file_uploader(
+            "Uploader des fichiers CSV",
+            type=['csv'],
+            accept_multiple_files=True,
+            key="csv_uploader"
+        )
+        
+        if uploaded_files:
+            os.makedirs(DATASETS_DIR, exist_ok=True)
+            for uploaded_file in uploaded_files:
+                file_path = os.path.join(DATASETS_DIR, uploaded_file.name)
+                with open(file_path, 'wb') as f:
+                    f.write(uploaded_file.getvalue())
+            st.sidebar.success(f"✅ {len(uploaded_files)} fichier(s) uploadé(s)")
+            st.rerun()
+        
+        # Liste des fichiers actuels
+        csv_files = [f for f in os.listdir(DATASETS_DIR) if f.endswith('.csv')] if os.path.exists(DATASETS_DIR) else []
+        if csv_files:
+            st.sidebar.caption(f"📁 {len(csv_files)} fichier(s) dans datasets/")
+            with st.sidebar.expander("Voir les fichiers"):
+                for f in sorted(csv_files):
+                    st.text(f"  • {f}")
+        
+        # Bouton reset
+        if st.sidebar.button("🗑️ Vider les données", type="secondary"):
+            # Supprimer tous les CSV du dossier datasets
+            if os.path.exists(DATASETS_DIR):
+                for f in os.listdir(DATASETS_DIR):
+                    if f.endswith('.csv'):
+                        os.remove(os.path.join(DATASETS_DIR, f))
+            # Vider aussi le cache API
+            clear_cache()
+            st.sidebar.success("✅ Données supprimées")
+            st.rerun()
+        
+        st.sidebar.divider()
+        
+        # Charger les données
         loader = CSVLoader(DATASETS_DIR)
         df = loader.load()
         if not df.empty:
             st.sidebar.success(f"✅ {len(df)} étudiants chargés")
+        else:
+            st.sidebar.info("ℹ️ Aucun fichier CSV trouvé")
     
     elif data_source == "API":
         st.sidebar.divider()
