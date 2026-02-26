@@ -93,30 +93,44 @@ def sidebar():
         st.sidebar.divider()
         st.sidebar.subheader("Configuration API")
         
-        activities_api = ActivitiesAPI()
+        # Configuration locale (sans besoin de PAT/PAT_ID)
+        AVAILABLE_YEARS = ["2024", "2025", "2026", "2027", "2028"]
+        KNOWN_UNITS = [
+            "B-DAT-200", "B-WEB-100", "B-CPP-100", "B-MUL-100",
+            "B-MAT-100", "B-COM-100", "B-ANG-100", "B-PRO-100",
+            "B-SYS-100", "B-SEC-100", "B-AIA-100", "B-PSU-100",
+            "B-DAT-201", "B-WEB-201", "B-CPP-201", "B-DAT-300",
+        ]
         
         # Sélection de l'année
         api_year = st.sidebar.selectbox(
             "Année",
-            options=activities_api.available_years,
+            options=AVAILABLE_YEARS,
             index=1,  # 2025 par défaut
             key="api_year_select"
         )
         
-        # Récupérer les units disponibles
+        # Récupérer les units disponibles (lazy - seulement si PAT/PAT_ID sont définis)
         @st.cache_data(ttl=300)
         def fetch_units(year):
             try:
+                from src.api.activities import ActivitiesAPI
+                activities_api = ActivitiesAPI()
                 return activities_api.list_available_units(year)
             except Exception:
                 return []
         
-        available_units = fetch_units(api_year)
-        if not available_units:
-            available_units = activities_api.known_units
-            st.sidebar.caption("⚠️ Mode hors ligne")
+        # Vérifier si les credentials sont disponibles
+        if os.getenv('PAT') and os.getenv('PAT_ID'):
+            available_units = fetch_units(api_year)
+            if not available_units:
+                available_units = KNOWN_UNITS
+                st.sidebar.caption("⚠️ Mode hors ligne - liste complète")
+            else:
+                st.sidebar.caption(f"✅ {len(available_units)} units disponibles")
         else:
-            st.sidebar.caption(f"✅ {len(available_units)} units disponibles")
+            available_units = KNOWN_UNITS
+            st.sidebar.caption("⚠️ Mode hors ligne - PAT/PAT_ID non définis")
         
         # Sélection de l'unit
         api_unit = st.sidebar.selectbox(
@@ -136,18 +150,27 @@ def sidebar():
         # Charger ou utiliser le cache
         cached_df, cached_year, cached_unit, cached_instance = load_cache()
         
-        if st.sidebar.button("🔄 Charger depuis l'API", type="primary"):
-            with st.spinner("Chargement..."):
-                loader = APILoader(
-                    year=api_year,
-                    unit=api_unit,
-                    instance=api_instance or None
-                )
-                df = loader.load()
-                if not df.empty:
-                    save_cache(df, api_year, api_unit, api_instance)
-                    st.sidebar.success(f"✅ {len(df)} étudiants chargés")
-                    st.rerun()
+        # Vérifier si les credentials sont définis avant de permettre le chargement API
+        has_credentials = os.getenv('PAT') and os.getenv('PAT_ID')
+        
+        if st.sidebar.button("🔄 Charger depuis l'API", type="primary", disabled=not has_credentials):
+            if not has_credentials:
+                st.sidebar.error("❌ PAT et PAT_ID doivent être définis dans .env")
+            else:
+                with st.spinner("Chargement..."):
+                    try:
+                        loader = APILoader(
+                            year=api_year,
+                            unit=api_unit,
+                            instance=api_instance or None
+                        )
+                        df = loader.load()
+                        if not df.empty:
+                            save_cache(df, api_year, api_unit, api_instance)
+                            st.sidebar.success(f"✅ {len(df)} étudiants chargés")
+                            st.rerun()
+                    except Exception as e:
+                        st.sidebar.error(f"❌ Erreur: {str(e)}")
         elif not cached_df.empty:
             df = cached_df
             st.sidebar.info(f"💾 Cache: {len(df)} étudiants ({cached_unit})")
