@@ -19,6 +19,70 @@ HERMES_ENDPOINT = os.getenv('HERMES_ENDPOINT', 'https://api.epitest.eu/api/')
 # Cache pour éviter les appels API répétés
 _activities_cache: Dict[str, List[dict]] = {}
 
+# Liste des units Bachelor connus pour autocomplétion
+KNOWN_BACHELOR_UNITS = [
+    # Bachelor 1 (Promo 2028)
+    "B-DAT-200", "B-WEB-100", "B-CPP-100", "B-MUL-100",
+    "B-MAT-100", "B-COM-100", "B-ANG-100", "B-PRO-100",
+    "B-SYS-100", "B-SEC-100", "B-AIA-100", "B-PSU-100",
+    # Bachelor 2 (Promo 2027)
+    "B-DAT-201", "B-WEB-201", "B-CPP-201", "B-MUL-201",
+    "B-MAT-201", "B-COM-201", "B-ANG-201", "B-PRO-201",
+    "B-SYS-201", "B-SEC-201", "B-AIA-201", "B-PSU-200",
+    # Bachelor 3 (Promo 2026)
+    "B-DAT-300", "B-WEB-300", "B-CPP-300", "B-MUL-300",
+    "B-MAT-300", "B-COM-300", "B-ANG-300", "B-PRO-300",
+    "B-SYS-300", "B-SEC-300", "B-AIA-300", "B-PSU-300",
+    # Autres
+    "B-OOP-100", "B-DBS-100", "B-NET-100", "B-MLG-100",
+    "B-OOP-200", "B-DBS-200", "B-NET-200", "B-MLG-200",
+]
+
+# Années disponibles
+AVAILABLE_YEARS = ["2024", "2025", "2026", "2027", "2028"]
+
+
+def get_available_units(year: str) -> List[str]:
+    """
+    Retourne la liste des units disponibles pour une année donnée.
+    Teste les units connus contre l'API et retourne ceux qui ont des activités.
+    """
+    available = []
+    headers = _get_auth_headers()
+    
+    for unit in KNOWN_BACHELOR_UNITS:
+        try:
+            url = f"{HERMES_ENDPOINT}activities?year={year}&unit={unit}"
+            response = requests.get(url, headers=headers, timeout=3)
+            
+            if response.status_code == 200:
+                data = response.json()
+                activities = data.get('activities', [])
+                if len(activities) > 0:
+                    available.append(unit)
+        except:
+            pass  # Ignorer les erreurs
+    
+    return available
+
+
+def validate_unit(year: str, unit: str) -> bool:
+    """
+    Vérifie si un unit existe pour une année donnée.
+    """
+    try:
+        headers = _get_auth_headers()
+        url = f"{HERMES_ENDPOINT}activities?year={year}&unit={unit}"
+        response = requests.get(url, headers=headers, timeout=5)
+        
+        if response.status_code == 200:
+            data = response.json()
+            activities = data.get('activities', [])
+            return len(activities) > 0
+        return False
+    except:
+        return False
+
 def _get_auth_headers() -> dict:
     """Génère les headers d'authentification Basic Auth."""
     if not PAT or not PAT_ID:

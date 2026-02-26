@@ -6,7 +6,14 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
-from hermes_api import load_data_from_api, sync_csv_from_api
+from hermes_api import (
+    load_data_from_api, 
+    sync_csv_from_api, 
+    get_available_units, 
+    validate_unit,
+    AVAILABLE_YEARS,
+    KNOWN_BACHELOR_UNITS
+)
 
 st.set_page_config(page_title="Pool Progression – Epitech", page_icon="📊", layout="wide")
 
@@ -364,9 +371,73 @@ if st.session_state.data_source == "API":
     default_unit = st.session_state.get("api_unit", "B-DAT-200")
     default_instance = st.session_state.get("api_instance", "")
     
-    api_year = st.sidebar.text_input("Annee", value=default_year)
-    api_unit = st.sidebar.text_input("Unite", value=default_unit)
-    api_instance = st.sidebar.text_input("Instance", value=default_instance)
+    # Autocomplétion pour l'année
+    api_year = st.sidebar.selectbox(
+        "Annee",
+        options=AVAILABLE_YEARS,
+        index=AVAILABLE_YEARS.index(default_year) if default_year in AVAILABLE_YEARS else 1
+    )
+    
+    # Récupérer les units disponibles pour l'année sélectionnée
+    @st.cache_data(ttl=300)  # Cache 5 minutes
+    def fetch_available_units(year):
+        """Récupère les units disponibles pour l'année donnée."""
+        try:
+            with st.spinner(f"Chargement des units pour {year}..."):
+                return get_available_units(year)
+        except Exception as e:
+            st.sidebar.error(f"Erreur: {str(e)}")
+            return []
+    
+    # Chargement des units disponibles
+    available_units = fetch_available_units(api_year)
+    
+    # Si aucun unit n'est trouvé, utiliser la liste complète comme fallback
+    if not available_units:
+        available_units = KNOWN_BACHELOR_UNITS
+        st.sidebar.caption("⚠️ Mode hors ligne - liste complète affichée")
+    else:
+        st.sidebar.caption(f"✅ {len(available_units)} units disponibles")
+    
+    # Autocomplétion pour l'unit avec recherche
+    if default_unit in available_units:
+        unit_index = available_units.index(default_unit)
+    else:
+        unit_index = 0
+    
+    api_unit = st.sidebar.selectbox(
+        "Unite",
+        options=available_units,
+        index=unit_index,
+        help="Sélectionnez un module Bachelor (B-XXX-XXX)"
+    )
+    
+    # Champ de recherche filtrable pour l'unit (alternative au selectbox)
+    st.sidebar.caption("Ou tapez directement:")
+    custom_unit = st.sidebar.text_input(
+        "Unit (custom)",
+        value=api_unit if api_unit in available_units else "",
+        placeholder="B-DAT-200",
+        help="Saisissez manuellement si l'unit n'est pas dans la liste"
+    )
+    
+    # Utiliser l'unit custom si différent
+    if custom_unit and custom_unit != api_unit:
+        api_unit = custom_unit
+    
+    # Validation de l'unit
+    if api_unit not in available_units:
+        is_valid = validate_unit(api_year, api_unit)
+        if not is_valid:
+            st.sidebar.warning(f"⚠️ {api_unit} n'a pas d'activités pour {api_year}")
+        else:
+            st.sidebar.success(f"✅ {api_unit} valide")
+    
+    api_instance = st.sidebar.text_input(
+        "Instance (optionnel)",
+        value=default_instance,
+        placeholder="MPL-1-1, PAR-1-1..."
+    )
     
     st.session_state.api_year = api_year
     st.session_state.api_unit = api_unit
