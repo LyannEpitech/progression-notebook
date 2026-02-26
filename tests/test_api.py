@@ -1,6 +1,17 @@
 # tests/test_api.py
 import pytest
-from hermes_api import parse_csv_filename, find_activity_id
+import sys
+import os
+
+# Ajouter le répertoire parent au path
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+from src.api.activities import ActivitiesAPI
+
+# Créer une instance pour les fonctions de compatibilité
+_api = ActivitiesAPI()
+parse_csv_filename = _api.parse_csv_filename
+find_activity_id = _api.find_activity_id
 
 def test_parse_csv_filename_valid():
     """Parse un nom de fichier valide."""
