@@ -45,7 +45,7 @@ pip install -r requirements.txt
 
 ## 🔐 Environment Variables
 
-The project uses a `.env` file for sensitive configuration (Hermes API credentials).
+The project uses a `.env` file for API authentication (Hermes API credentials).
 
 1. **Create a `.env` file from the example**
 
@@ -56,23 +56,23 @@ cp .env.example .env
 Then edit `.env` with your actual credentials:
 
 ```bash
-HERMES_EMAIL=votre.email@epitech.eu
-HERMES_PASSWORD=votre_mot_de_passe_hermes
+PAT=your_pat_here
+PAT_ID=your_pat_id_here
+HERMES_ENDPOINT=https://api.epitest.eu/api/
 ```
 
 ### Available Variables
 
 | Variable | Description | Required | Default |
 |----------|-------------|----------|---------|
-| `HERMES_EMAIL` | Hermes login email | Yes (for API mode) | - |
-| `HERMES_PASSWORD` | Hermes password | Yes (for API mode) | - |
+| `PAT` | Personal Access Token | **Yes** | - |
+| `PAT_ID` | PAT identifier | **Yes** | - |
 | `HERMES_ENDPOINT` | Hermes API endpoint | No | `https://api.epitest.eu/api/` |
-| `PAT` | Personal Access Token (auto-generated) | No | - |
-| `PAT_ID` | PAT identifier (auto-generated) | No | - |
 
 **Notes:**
-- `PAT` and `PAT_ID` are automatically generated after the first successful login
-- ⚠️ **Never commit the `.env` file** to version control. It's already in `.gitignore`.
+- `PAT` and `PAT_ID` are obtained from your Epitech account (Profile → API Tokens)
+- These tokens are used for all API calls to fetch student results
+- ⚠️ **Never commit the `.env` file** to version control. It's already in `.gitignore`
 
 ---
 
