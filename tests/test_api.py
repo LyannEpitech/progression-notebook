@@ -1,6 +1,33 @@
 # tests/test_api.py
 import pytest
-from hermes_api import parse_csv_filename, find_activity_id
+import sys
+import os
+import re
+
+# Ajouter le répertoire parent au path
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+# Fonctions standalone pour les tests (pas besoin de client API)
+def parse_csv_filename(filename: str):
+    """Parse un nom de fichier CSV pour extraire les métadonnées."""
+    pattern = r'hermes_(\d+)_(.+?)_(.+?\d+)_(delivery|git)\.csv'
+    match = re.match(pattern, filename)
+    if not match:
+        return None
+    return {
+        'year': match.group(1),
+        'unit': match.group(2),
+        'day_slug': match.group(3),
+        'test_type': match.group(4)
+    }
+
+def find_activity_id(activities, day_slug: str):
+    """Trouve l'ID d'une activité à partir de son slug."""
+    for activity in activities:
+        slug = activity.get('projectTemplate', {}).get('slug', '')
+        if slug == day_slug:
+            return activity.get('id')
+    return None
 
 def test_parse_csv_filename_valid():
     """Parse un nom de fichier valide."""

@@ -1,7 +1,13 @@
 # tests/test_detection.py
 import pytest
 import pandas as pd
-from dashboard import (
+import sys
+import os
+
+# Ajouter le répertoire parent au path
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+from src.core.detection import (
     detect_copieurs,
     detect_pics_isoles,
     detect_montagnes_russes,

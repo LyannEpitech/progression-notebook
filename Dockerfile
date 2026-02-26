@@ -14,6 +14,9 @@ RUN pip install --no-cache-dir -r requirements-dashboard.txt
 # Copy application code
 COPY dashboard.py .
 COPY hermes_api.py .
+COPY pyproject.toml .
+COPY src/ ./src/
+COPY config/ ./config/
 COPY .env .
 COPY progression.ipynb .
 COPY README.md .
